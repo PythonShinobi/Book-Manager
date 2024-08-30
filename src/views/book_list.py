@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (
     QFileDialog, 
     QStackedWidget,
     QTextEdit,
-    QScrollArea
+    QScrollArea,
+    QDialog
 )
 
 from .custom_widgets import QFlowLayout
@@ -79,54 +80,80 @@ class BookList(QWidget):
 
     def show_book_pages(self, title):
         self.stacked_widget.setCurrentWidget(self.page_view)
-    
+        
         while self.page_layout.count():
             item = self.page_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-    
+        
         self.page_layout.addWidget(QLabel(f'Pages for {title}'))
-    
+        
         # Create a QWidget to hold buttons for each page
         page_buttons_widget = QWidget()  # Acts as a container for the buttons that represent different pages.
         page_buttons_layout = QFlowLayout(page_buttons_widget)
-    
+        
         # Create a QWidget to hold the content area
         content_area_widget = QWidget()
         content_area_layout = QVBoxLayout(content_area_widget)
         self.page_content_area = content_area_widget
-    
+        
         # Add buttons for each page
+        self.page_buttons_layout = page_buttons_layout  # Save layout for adding new pages later
+        self.page_content_layout = content_area_layout  # Save layout for adding new content later
+        self.pages = []  # Track pages for dynamic content management
+        
         for i in range(1, 20):  # Simulated pages
-            button = QPushButton(f'Page {i}')
-            button.clicked.connect(lambda checked, page=i: self.show_page_content(page))
-            page_buttons_layout.addWidget(button)
-    
-            # Add a QTextEdit for each page content (initially hidden)
-            page_content = QTextEdit(f"Content of Page {i} for {title}.")
-            page_content.setReadOnly(True)
-            page_content.setVisible(False)
-            content_area_layout.addWidget(page_content)
-    
+            self.add_page_to_view(i, f"Content of Page {i} for {title}")
+        
         self.page_layout.addWidget(page_buttons_widget)
         self.page_layout.addWidget(content_area_widget)
+        
+        # Add a button to allow adding new pages
+        add_page_button = QPushButton('Add Page')
+        add_page_button.clicked.connect(self.add_page)
+        self.page_layout.addWidget(add_page_button)
 
-    def show_page_content(self, page_number):
-        # Initially hide all page contents.
-        for i in range(self.page_content_area.layout().count()):
-            widget = self.page_content_area.layout().itemAt(i).widget()
-            if isinstance(widget, QTextEdit):
-                widget.setVisible(False)
+    def show_page_content(self, page):
+        # Create a new dialog window to display the page content
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Page {page}")
 
-        # Show the selected page content
-        content_widget = self.page_content_area.layout().itemAt(page_number - 1).widget()
-        if isinstance(content_widget, QTextEdit):
-            content_widget.setVisible(True)
+        # Create a layout for the dialog
+        layout = QVBoxLayout(dialog)
+
+        # Create a QTextEdit widget with the page content
+        content_widget = QTextEdit(f"Content of Page {page}.")
+        content_widget.setReadOnly(True)
+
+        # Add the QTextEdit widget to the layout
+        layout.addWidget(content_widget)
+
+        # Set the dialog layout
+        dialog.setLayout(layout)
+
+        # Resize the dialog window and show it
+        dialog.resize(500, 400)
+        dialog.exec_()
 
     def add_page(self):
         page_title, ok = QInputDialog.getText(self, 'Add Page', 'Enter page title:')
         if ok and page_title:
             page_content, ok = QInputDialog.getMultiLineText(self, 'Page Content', 'Enter page content:')
             if ok and page_content:
-                self.page_layout.addWidget(QLabel(f'{page_title}: {page_content}'))
+                page_number = len(self.pages) + 1
+                self.add_page_to_view(page_number, page_content, page_title)
+
+    def add_page_to_view(self, page_number, content, title=None):
+        if not title:
+            title = f"Page {page_number}"
+        button = QPushButton(title)
+        button.clicked.connect(lambda checked, page=page_number: self.show_page_content(page))
+        self.page_buttons_layout.addWidget(button)
+
+        page_content = QTextEdit(content)
+        page_content.setReadOnly(True)
+        page_content.setVisible(False)
+        self.page_content_layout.addWidget(page_content)
+
+        self.pages.append((button, page_content))
