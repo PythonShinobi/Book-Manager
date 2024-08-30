@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import (
     QDialog
 )
 
+from PyQt5.QtCore import Qt
+
 from .custom_widgets import QFlowLayout
 from .book_card import BookCard
 
@@ -80,15 +82,20 @@ class BookList(QWidget):
 
     def show_book_pages(self, title):
         self.stacked_widget.setCurrentWidget(self.page_view)
-        
+    
+        # Clear any existing widgets in the page layout
         while self.page_layout.count():
             item = self.page_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-        
-        self.page_layout.addWidget(QLabel(f'Pages for {title}'))
-        
+    
+        # Add a label to display the full book title
+        title_label = QLabel(title)
+        title_label.setWordWrap(True)  # Ensure the title is fully visible
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.page_layout.addWidget(title_label)
+    
         # Create a QWidget to hold buttons for each page
         page_buttons_widget = QWidget()  # Acts as a container for the buttons that represent different pages.
         page_buttons_layout = QFlowLayout(page_buttons_widget)
