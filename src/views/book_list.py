@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
 )
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 
 from .custom_widgets import QFlowLayout
 from .book_card import BookCard
@@ -94,6 +95,11 @@ class BookList(QWidget):
         title_label = QLabel(title)
         title_label.setWordWrap(True)  # Ensure the title is fully visible
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Set the font for the title label
+        font = QFont('Arial', 12, QFont.Weight.Bold)  # Example: Arial, size 12, bold
+        title_label.setFont(font)
+
         self.page_layout.addWidget(title_label)
     
         # Create a QWidget to hold buttons for each page
@@ -154,13 +160,19 @@ class BookList(QWidget):
     def add_page_to_view(self, page_number, content, title=None):
         if not title:
             title = f"Page {page_number}"
+
+        # Create the button and set the custom font
         button = QPushButton(title)
+        button.setFont(QFont('Helvetica', 8, QFont.Weight.Light))  # Set the font to Helvetica, size 12, and bold
+
         button.clicked.connect(lambda checked, page=page_number: self.show_page_content(page))
         self.page_buttons_layout.addWidget(button)
 
+        # Create the page content area
         page_content = QTextEdit(content)
         page_content.setReadOnly(True)
         page_content.setVisible(False)
         self.page_content_layout.addWidget(page_content)
 
+        # Store the button and content for future reference
         self.pages.append((button, page_content))
