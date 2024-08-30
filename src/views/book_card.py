@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap, QCursor
+from PyQt5.QtGui import QPixmap, QCursor, QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSizePolicy
 
 class BookCard(QWidget):
@@ -30,6 +30,10 @@ class BookCard(QWidget):
         self.title_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Expand horizontally, but fixed height
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Align text to center
         self.title_label.setWordWrap(False)  # Disable word wrapping
+
+        # Set font for the title label
+        self.title_label.setFont(QFont('Verdana', 10, QFont.Weight.Light))  # Example: Verdana, size 10, Bold
+        
         layout.addWidget(self.title_label, Qt.AlignmentFlag.AlignCenter)
 
         # Set initial style        

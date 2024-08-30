@@ -26,15 +26,16 @@ class BookList(QWidget):
         layout = QVBoxLayout(self)
 
         self.label = QLabel('Book List')
+        self.label.setFont(QFont('Verdana', 16, QFont.Weight.Light))
         layout.addWidget(self.label)
 
-        # Create QListWidget for displaying book cards
+        # Create QListWidget for displaying book cards.
         self.book_list_widget = QListWidget()
         self.book_list_widget.setFlow(QListWidget.LeftToRight)  # Arrange items horizontally
         self.book_list_widget.setWrapping(True)  # Wrap items to the next line if needed
         self.book_list_widget.setResizeMode(QListWidget.Adjust)  # Adjust size of items automatically
 
-        # Create QScrollArea and set the QListWidget as its widget
+        # Create QScrollArea and set the QListWidget as its widget.
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(self.book_list_widget)
@@ -116,7 +117,7 @@ class BookList(QWidget):
         self.page_content_layout = content_area_layout  # Save layout for adding new content later
         self.pages = []  # Track pages for dynamic content management
         
-        for i in range(1, 20):  # Simulated pages
+        for i in range(1, 100):  # Simulated pages
             self.add_page_to_view(i, f"Content of Page {i} for {title}")
         
         self.page_layout.addWidget(page_buttons_widget)
