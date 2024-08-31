@@ -1,10 +1,11 @@
+import qtawesome as qta
+from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import (
     QMainWindow,    
     QAction,
     QVBoxLayout,
     QWidget
 )
-from PyQt5.QtCore import QSize
 
 from .book_list import BookList
 
@@ -25,6 +26,9 @@ class MainWindow(QMainWindow):
         
         # Set the minimum size to default size
         self.setMinimumSize(QSize(720, 600))
+
+        # Set the window icon to a distinct icon
+        self.setWindowIcon(qta.icon('fa.archive')) # Set the library icon
 
         self.setCentralWidget(self.central_widget)
 

@@ -1,3 +1,6 @@
+import qtawesome as qta
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QWidget, 
     QVBoxLayout,    
@@ -13,9 +16,6 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QDialog
 )
-
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
 
 from .custom_widgets import QFlowLayout
 from .book_card import BookCard
@@ -40,6 +40,7 @@ class BookList(QWidget):
         self.add_button = QPushButton('Add Book')  # Add book button
         self.add_button.setFixedWidth(400)
         self.add_button.clicked.connect(self.add_book)
+        self.add_button.setIcon(qta.icon('fa.book'))  # Use the book icon
         layout.addWidget(self.add_button)  # Add button to the layout
 
         # Center the Add Book button horizontally
@@ -131,12 +132,14 @@ class BookList(QWidget):
         add_page_button = QPushButton('Add Page')
         add_page_button.clicked.connect(self.add_page)
         add_page_button.setFixedWidth(150)  # Set the desired width
+        add_page_button.setIcon(qta.icon('fa.plus'))
         button_layout.addWidget(add_page_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Add a button to load more pages
         self.load_more_button = QPushButton('Load More Pages')
         self.load_more_button.clicked.connect(self.load_more_pages)
         self.load_more_button.setFixedWidth(150)  # Set the desired width
+        self.load_more_button.setIcon(qta.icon('fa.refresh'))
         button_layout.addWidget(self.load_more_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         # Add the scroll area with buttons to the main page layout
