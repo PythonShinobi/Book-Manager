@@ -65,13 +65,12 @@ class BookList(QWidget):
 
     def load_books(self):
         # Simulate adding books; replace with database fetching logic
-        self.add_book_card('Book 1', None)
-        self.add_book_card('Book 2', None)
-        self.add_book_card('Book 3', None)
-        self.add_book_card('Book 4', None)
-        self.add_book_card('Book 5', None)
-        self.add_book_card('Book 6', None)
-        self.add_book_card('Book 7', None)
+        self.add_book_card('Rewire: Change Your Brain', r'resources\images\33 Best Books on Building Good Habits (Updated for 2024).jpg')
+        self.add_book_card('Art Of Thinking', r'resources\images\art-of-thinking.jpg')
+        self.add_book_card('Resilient', r'resources\images\Enjoy life - Wildmind.jpg')
+        self.add_book_card('How to learn anything in 48 hours', r'resources\images\How to Learn Almost Anything in 48 Hours_ The Skills You Need to Work Smarter, Study Faster, and Remember More!.jpg')
+        self.add_book_card('How to lead while not being incharge', r'resources\images\how-to-lead.jpg')
+        self.add_book_card('The Catalyst', r'resources\images\The Catalyst.jpg')
 
     def add_book(self):
         title, ok = QInputDialog.getText(self, 'Add Book', 'Enter book title:')
