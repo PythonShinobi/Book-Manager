@@ -1,21 +1,10 @@
 BookManager/
 │
-├── api/                    # Backend API server (if you're developing the API as well)
-│   ├── app.js              # Main Express.js server file (if using Node.js)
-│   ├── routes/
-│   │   └── books.js        # Routes related to book data
-│   └── models/
-│       └── book.js         # Book model/schema (if using a database)
-│
 ├── resources/              # Static resources like images, icons
 │   └── images/             # Icons, logos, etc.
 │
 ├── src/                    # Main PyQt5 application source files
 │   ├── main.py             # Entry point of the PyQt5 application
-│   ├── controllers/        # Logic controllers to handle UI and API integration
-│   │   ├── main_controller.py         # Controller for the main window
-│   │   ├── book_list_controller.py    # Controller for the book list view
-│   │   └── book_detail_controller.py  # Controller for the book detail view
 │   ├── models/             # Data models and API interaction logic
 │   │   ├── book.py         # Book data model and API requests
 │   └── views/              # PyQt5 UI components, defined in Python
