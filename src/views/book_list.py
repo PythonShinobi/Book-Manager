@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QWidget,QVBoxLayout,QHBoxLayout,QLabel, QPushButton, 
     QListWidget,QListWidgetItem, QInputDialog, QScrollArea,
-    QFileDialog, QStackedWidget, QTextEdit, QDialog
+    QFileDialog, QStackedWidget, QTextEdit, QDialog, QMessageBox
 )
 
 from database.database import Session, Book, Page
@@ -258,7 +258,7 @@ class BookList(QWidget):
         self.page_buttons_layout.addWidget(button)
 
         # Create the page content area
-        page_content = QTextEdit(content)
+        page_content = QTextEdit(content)        
         page_content.setReadOnly(True)
         page_content.setVisible(False)
         self.page_content_layout.addWidget(page_content)
@@ -266,24 +266,41 @@ class BookList(QWidget):
         # Store the button and content for future reference
         self.pages.append((button, page_content))        
 
-    def show_page_content(self, page):
-        # Create a new dialog window to display the page content
-        dialog = QDialog(self)
-        dialog.setWindowTitle(f"Page {page}")
+    def show_page_content(self, page_number):
+        """Display the content of a specific page in a dialog."""
+        try:
+            session = Session()
 
-        # Create a layout for the dialog
-        layout = QVBoxLayout(dialog)
+            # Query the database to find the page with the given number and the current book title.
+            page = session.query(Page).filter(Page.number == page_number,
+                                              Page.book.has(Book.title == self.page_title)).first()
 
-        # Create a QTextEdit widget with the page content
-        content_widget = QTextEdit(self.page_content_layout)
-        content_widget.setReadOnly(True)
+            # Ensure exactly one result is found
+            if not page:
+                # Show a message dialog if the page is not found
+                QMessageBox.warning(self, 'Page Not Found', f'Page {page_number} not found.')
+                return
 
-        # Add the QTextEdit widget to the layout
-        layout.addWidget(content_widget)
+            # Create a new dialog window to display the page content
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"Page {page_number}")
 
-        # Set the dialog layout
-        dialog.setLayout(layout)
+            # Create a layout for the dialog
+            layout = QVBoxLayout(dialog)
 
-        # Resize the dialog window and show it
-        dialog.resize(500, 400)
-        dialog.exec_()
+            # Create a QTextEdit widget with the page content
+            content_widget = QTextEdit(page.content)
+            content_widget.setReadOnly(True)
+
+            # Add the QTextEdit widget to the layout
+            layout.addWidget(content_widget)
+
+            # Set the dialog layout
+            dialog.setLayout(layout)
+
+            # Resize the dialog window and show it
+            dialog.resize(500, 400)
+            dialog.exec_()
+
+        except SQLAlchemyError as e:
+            print(f"Error retrieving page content: {e}")
