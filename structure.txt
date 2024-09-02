@@ -5,8 +5,8 @@ BookManager/
 │
 ├── src/                    # Main PyQt5 application source files
 │   ├── main.py             # Entry point of the PyQt5 application
-│   ├── models/             # Data models and API interaction logic
-│   │   ├── book.py         # Book data model and API requests
+│   ├── database/             
+│   │   ├── database.py     # Contains database models
 │   └── views/              # PyQt5 UI components, defined in Python
 │       ├── main_window.py  # Main window layout and design
 │       ├── book_list.py    # Book list view layout and design
