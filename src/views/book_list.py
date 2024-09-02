@@ -1,24 +1,19 @@
+import logging
 import qtawesome as qta
+from sqlalchemy.exc import SQLAlchemyError
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
-    QWidget, 
-    QVBoxLayout,    
-    QHBoxLayout,
-    QLabel, 
-    QPushButton, 
-    QListWidget, 
-    QListWidgetItem, 
-    QInputDialog, 
-    QFileDialog, 
-    QStackedWidget,
-    QTextEdit,
-    QScrollArea,
-    QDialog
+    QWidget,QVBoxLayout,QHBoxLayout,QLabel, QPushButton, 
+    QListWidget,QListWidgetItem, QInputDialog, QScrollArea,
+    QFileDialog, QStackedWidget, QTextEdit, QDialog
 )
 
+from database.database import Session, Book, Page
 from .custom_widgets import QFlowLayout
 from .book_card import BookCard
+
+logging.basicConfig(level=logging.DEBUG)  # Set the logging level to DEBUG
 
 class BookList(QWidget):
     def __init__(self):
@@ -39,12 +34,9 @@ class BookList(QWidget):
 
         self.add_button = QPushButton('Add Book')  # Add book button
         self.add_button.setFixedWidth(400)
-        self.add_button.clicked.connect(self.add_book)
-        self.add_button.setIcon(qta.icon('fa.book'))  # Use the book icon
-        layout.addWidget(self.add_button)  # Add button to the layout
-
-        # Center the Add Book button horizontally
-        add_button_layout = QHBoxLayout()
+        self.add_button.clicked.connect(self.add_book_dialog)
+        self.add_button.setIcon(qta.icon('fa.book'))  # Use the book icon        
+        add_button_layout = QHBoxLayout()  # Center the Add Book button horizontally
         add_button_layout.addStretch()  # Add stretchable space to the left
         add_button_layout.addWidget(self.add_button)  # Add the button in the middle
         add_button_layout.addStretch()  # Add stretchable space to the right
@@ -52,119 +44,227 @@ class BookList(QWidget):
 
         # Stack to switch between book list and book details
         self.stacked_widget = QStackedWidget()  # Manages multiple child widgets (pages) but displays only one at a time.
-        self.page_view = QWidget()  # Container for displaying book details when a book is selected.
+        self.page_view = QWidget()  # Container for displaying the book's title and pages.
+        self.page_layout = QVBoxLayout(self.page_view)
+        self.page_view.setLayout(self.page_layout)
         self.stacked_widget.addWidget(self.page_view)
         layout.addWidget(self.stacked_widget)  # Add stack widget to the layout.
 
-        # Initialize the book details view
-        self.page_layout = QVBoxLayout(self.page_view)
-        self.page_view.setLayout(self.page_layout)
-
-        # For testing, simulate loading books
         self.load_books()
 
     def load_books(self):
-        # Simulate adding books; replace with database fetching logic
-        self.add_book_card('Rewire: Change Your Brain', r'resources\images\33 Best Books on Building Good Habits (Updated for 2024).jpg')
-        self.add_book_card('Art Of Thinking', r'resources\images\art-of-thinking.jpg')
-        self.add_book_card('Resilient', r'resources\images\Enjoy life - Wildmind.jpg')
-        self.add_book_card('How to learn anything in 48 hours', r'resources\images\How to Learn Almost Anything in 48 Hours_ The Skills You Need to Work Smarter, Study Faster, and Remember More!.jpg')
-        self.add_book_card('How to lead while not being incharge', r'resources\images\how-to-lead.jpg')
-        self.add_book_card('The Catalyst', r'resources\images\The Catalyst.jpg')
+        """Load books from the database."""
+        try:
+            # Create a new session for interacting with the database.
+            session = Session()
 
-    def add_book(self):
+            # Query the database to retrieve all records from the 'Book' table.
+            # The result is a list of 'Book' objects.
+            books = session.query(Book).all()
+
+            # Iterate through each book retrieved from the database.
+            for book in books:
+                # Add a book card to the UI for each book, using its title and cover image path.
+                self.add_book_card(book.title, book.cover_path)
+
+        # Handle any SQLAlchemy-related errors that may occur during the process.
+        except SQLAlchemyError as e:
+            # Print an error message to the console if an exception occurs.
+            print(f"Error loading books: {e}")
+
+    def add_book_dialog(self):
+        # Open a dialog to get text input from the user. 
+        # The dialog has a title 'Add Book' and prompts the user to 'Enter book title:'.
+        # 'title' will store the user's input, and 'ok' will be True if the user presses 'OK' and False if they cancel.
         title, ok = QInputDialog.getText(self, 'Add Book', 'Enter book title:')
+        
+        # Check if the user pressed 'OK' and entered a non-empty title.
         if ok and title:
+            # Open a file dialog for the user to select a book cover image.
+            # 'cover_path' stores the path to the selected file, and the second value is ignored (hence the '_').
+            # The dialog title is 'Select Book Cover', and it filters files to show only image formats (png, xpm, jpg).
             cover_path, _ = QFileDialog.getOpenFileName(self, 'Select Book Cover', '', 'Images (*.png *.xpm *.jpg)')
+            
+            # Call the method to save the book's title and cover image path to the database.
+            self.save_book_to_db(title, cover_path)
+
+    def save_book_to_db(self, title, cover_path):
+        """Save book to the databse."""
+        try:
+            session = Session()
+            book = Book(title=title, cover_path=cover_path)
+            session.add(book)
+            session.commit()
             self.add_book_card(title, cover_path)
+        except SQLAlchemyError as e:
+            print(f"Error saving book to database: {e}")            
 
     def add_book_card(self, title, cover_path):
+        # Create a new QListWidgetItem, which is a container item for adding widgets to QListWidget.
         item = QListWidgetItem()
-        book_card = BookCard(title, cover_path if cover_path else None)
+
+        # Create a new instance of BookCard, passing the title and cover_path.
+        # If cover_path is not provided (None), pass None to the BookCard.
+        book_card = BookCard(title, cover_path if cover_path else None)        
+
+        # Set the size of the QListWidgetItem to match the size of the book_card widget.
         item.setSizeHint(book_card.sizeHint())
+
+        # Add the QListWidgetItem (item) to the book_list_widget, which is presumably a QListWidget.
         self.book_list_widget.addItem(item)
+
+        # Set the book_card widget to be displayed inside the item in the QListWidget.
         self.book_list_widget.setItemWidget(item, book_card)
+
+        # Connect the clicked signal of the book_card to a function that shows the book pages.
+        # The lambda function is used to pass the title of the book to the show_book_pages method.
         book_card.clicked.connect(lambda title=title: self.show_book_pages(title))
 
     def show_book_pages(self, title):
-        self.stacked_widget.setCurrentWidget(self.page_view)
-    
-        # Clear any existing widgets in the page layout
+        # Clear any existing widgets from the page layout to prepare for new content.
         while self.page_layout.count():
             item = self.page_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
     
-        # Add a label to display the full book title
+        # Create and configure a QLabel to display the book title.
         title_label = QLabel(title)
-        title_label.setWordWrap(True)  # Ensure the title is fully visible
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Set the font for the title label
-        font = QFont('Arial', 12, QFont.Weight.Bold)  # Example: Arial, size 12, bold
+        title_label.setWordWrap(True)  # Ensure the title wraps if it's too long for one line.
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center-align the title.
+    
+        # Set the font of the title label (Arial, size 12, bold).
+        font = QFont('Arial', 12, QFont.Weight.Bold)
         title_label.setFont(font)
-
+    
+        # Add the title label to the page layout.
         self.page_layout.addWidget(title_label)
-
-        # Create a QScrollArea to hold the page buttons
+    
+        # Create a QScrollArea for displaying buttons that allow navigation through the pages.
         scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFixedHeight(150)  # Set the desired height for the scroll area
-
-        # Create a QWidget to hold buttons for each page
+        scroll_area.setWidgetResizable(True)  # Allow the scroll area to resize its content.
+        scroll_area.setFixedHeight(150)  # Set the height of the scroll area.
+    
+        # Create a QWidget to hold the buttons, with a QFlowLayout to manage their arrangement.
         page_buttons_widget = QWidget()
         page_buttons_layout = QFlowLayout(page_buttons_widget)
-
-        # Set the scroll area's widget
+    
+        # Assign the page buttons widget to the scroll area.
         scroll_area.setWidget(page_buttons_widget)
-
-        # Create a QWidget to hold the content area
+    
+        # Create a QWidget to serve as the content area where the page content will be displayed.
         content_area_widget = QWidget()
         content_area_layout = QVBoxLayout(content_area_widget)
-        self.page_content_area = content_area_widget        
-
-        # Create a horizontal layout for the buttons
+    
+        # Create a horizontal layout for the action buttons (Add Page, Load More Pages).
         button_layout = QHBoxLayout()
-
-        # Add a button to allow adding new pages
+    
+        # Create and configure an "Add Page" button, and connect it to the add_page method.
         add_page_button = QPushButton('Add Page')
         add_page_button.clicked.connect(self.add_page)
-        add_page_button.setFixedWidth(150)  # Set the desired width
-        add_page_button.setIcon(qta.icon('fa.plus'))
+        add_page_button.setFixedWidth(150)  # Set a fixed width for the button.
+        add_page_button.setIcon(qta.icon('fa.plus'))  # Set an icon for the button.
         button_layout.addWidget(add_page_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        # Add a button to load more pages
+    
+        # Create and configure a "Load More Pages" button, and connect it to the load_more_pages method.
         self.load_more_button = QPushButton('Load More Pages')
         self.load_more_button.clicked.connect(self.load_more_pages)
-        self.load_more_button.setFixedWidth(150)  # Set the desired width
-        self.load_more_button.setIcon(qta.icon('fa.refresh'))
+        self.load_more_button.setFixedWidth(150)  # Set a fixed width for the button.
+        self.load_more_button.setIcon(qta.icon('fa.refresh'))  # Set an icon for the button.
         button_layout.addWidget(self.load_more_button, alignment=Qt.AlignmentFlag.AlignRight)
-
-        # Add the scroll area with buttons to the main page layout
+    
+        # Add the scroll area (with page buttons) and the content area to the page layout.
         self.page_layout.addWidget(scroll_area)
         self.page_layout.addWidget(content_area_widget)
-
-        # Initialize page data
-        self.page_buttons_layout = page_buttons_layout  # Save layout for adding new pages later
-        self.page_content_layout = content_area_layout  # Save layout for adding new content later
-        self.pages = []  # Track pages for dynamic content management
-        self.current_page_index = 0  # Track current page index
-        self.page_title = title  # Save the current book title
-
-        # Add the button layout to the page layout
+    
+        # Initialize variables to track page data and layout:
+        self.page_buttons_layout = page_buttons_layout  # Store the layout for adding buttons later.
+        self.page_content_layout = content_area_layout  # Store the layout for displaying content.
+        self.pages = []  # Initialize an empty list to track pages for dynamic management.
+        self.current_page_index = -1  # Start before the first page
+        self.page_title = title  # Store the current book title for reference.
+    
+        # Add the action button layout to the page layout.
         self.page_layout.addLayout(button_layout)
-
-        # Load initial set of pages
+    
+        # Load the initial set of pages from the database.
         self.load_more_pages()
 
-    def load_more_pages(self):
-        # Load a limited number of pages each time
-        for i in range(self.current_page_index + 1, self.current_page_index + 41):
-            self.add_page_to_view(i, f"Content of Page {i} for {self.page_title}")
+    def add_page(self):
+        page_title, ok = QInputDialog.getText(self, 'Add Page', 'Enter page title:')
+        if ok and page_title:
+            page_content, ok = QInputDialog.getMultiLineText(self, 'Page Content', 'Enter page content:')
+            if ok and page_content:
+                self.save_page_to_db(page_title, page_content)
 
-        # Update the index for the next set of pages
-        self.current_page_index += 40
+    def save_page_to_db(self, title, content):
+        try:
+            session = Session()
+            book = session.query(Book).filter(Book.title == self.page_title).one()
+            page_number = session.query(Page).filter(Page.book_id == book.id).count() + 1
+            page = Page(number=page_number, content=content, title=title, book_id=book.id)
+            session.add(page)
+            session.commit()
+            self.add_page_to_view(page_number, content, title)
+        except SQLAlchemyError as e:
+            print(f"Error saving page to database: {e}")                
+
+    def load_more_pages(self):
+        try:
+            # Create a new session for interacting with the database.
+            session = Session()
+    
+            # Query the database to find the book with the title matching 'self.page_title'.
+            # Retrieve a single 'Book' object.
+            book = session.query(Book).filter(Book.title == self.page_title).one()
+    
+            # Query the database for all pages associated with the book's ID,
+            # ordered by the page number in ascending order.
+            pages = session.query(Page).filter(Page.book_id == book.id).order_by(Page.number).all()
+            
+            # Print the total number of pages and their details for debugging.
+            total_pages = len(pages)                   
+
+            # Ensure there are pages to load
+            if total_pages > 0:
+                start_index = self.current_page_index + 1
+                end_index = min(start_index + 40, total_pages)        
+    
+                # Loop through the pages, starting from the next page after the current one,
+                # up to the next 40 pages or until the end of the list of pages.
+                for i in range(start_index, end_index):                    
+                    page = pages[i]
+    
+                    # Add the page content to the view using its number, content, and title.                    
+                    self.add_page_to_view(page.number, page.content, page.title)                    
+    
+                # Update the current page index to reflect that more pages have been loaded.
+                self.current_page_index = end_index - 1            
+    
+        # Handle any SQLAlchemy-related errors that may occur during the process.
+        except SQLAlchemyError as e:
+            # Print an error message to the console if an exception occurs.
+            print(f"Error loading pages: {e}")
+
+    def add_page_to_view(self, page_number, content, title=None):
+        """Add a new page with a button and content to a view in a PyQt application."""
+        if not title:
+            title = f"Page {page_number}"
+
+        # Create the button and set the custom font
+        button = QPushButton(title)
+        button.setFont(QFont('Helvetica', 8, QFont.Weight.Light))  # Set the font to Helvetica, size 12, and bold
+        button.clicked.connect(lambda checked, page=page_number: self.show_page_content(page))
+        self.page_buttons_layout.addWidget(button)
+
+        # Create the page content area
+        page_content = QTextEdit(content)
+        page_content.setReadOnly(True)
+        page_content.setVisible(False)
+        self.page_content_layout.addWidget(page_content)
+
+        # Store the button and content for future reference
+        self.pages.append((button, page_content))        
 
     def show_page_content(self, page):
         # Create a new dialog window to display the page content
@@ -175,7 +275,7 @@ class BookList(QWidget):
         layout = QVBoxLayout(dialog)
 
         # Create a QTextEdit widget with the page content
-        content_widget = QTextEdit(f"Content of Page {page}.")
+        content_widget = QTextEdit(self.page_content_layout)
         content_widget.setReadOnly(True)
 
         # Add the QTextEdit widget to the layout
@@ -187,32 +287,3 @@ class BookList(QWidget):
         # Resize the dialog window and show it
         dialog.resize(500, 400)
         dialog.exec_()
-
-    def add_page(self):
-        page_title, ok = QInputDialog.getText(self, 'Add Page', 'Enter page title:')
-        if ok and page_title:
-            page_content, ok = QInputDialog.getMultiLineText(self, 'Page Content', 'Enter page content:')
-            if ok and page_content:
-                page_number = len(self.pages) + 1
-                self.add_page_to_view(page_number, page_content, page_title)
-
-    def add_page_to_view(self, page_number, content, title=None):
-        """Add a new page with a button and content to a view in a PyQt application."""
-        if not title:
-            title = f"Page {page_number}"
-
-        # Create the button and set the custom font
-        button = QPushButton(title)
-        button.setFont(QFont('Helvetica', 8, QFont.Weight.Light))  # Set the font to Helvetica, size 12, and bold
-
-        button.clicked.connect(lambda checked, page=page_number: self.show_page_content(page))
-        self.page_buttons_layout.addWidget(button)
-
-        # Create the page content area
-        page_content = QTextEdit(content)
-        page_content.setReadOnly(True)
-        page_content.setVisible(False)
-        self.page_content_layout.addWidget(page_content)
-
-        # Store the button and content for future reference
-        self.pages.append((button, page_content))
