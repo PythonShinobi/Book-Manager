@@ -231,7 +231,7 @@ class BookList(QWidget):
             session.commit()
             self.add_page_to_view(page_number, content, title)
         except SQLAlchemyError as e:
-            print(f"Error saving page to database: {e}")                
+            self.show_error_message(f"Error saving book to database: {e}")
 
     def load_more_pages(self):
         try:
@@ -245,8 +245,7 @@ class BookList(QWidget):
             # Query the database for all pages associated with the book's ID,
             # ordered by the page number in ascending order.
             pages = session.query(Page).filter(Page.book_id == book.id).order_by(Page.number).all()
-            
-            # Print the total number of pages and their details for debugging.
+                        
             total_pages = len(pages)                   
 
             # Ensure there are pages to load
@@ -266,9 +265,8 @@ class BookList(QWidget):
                 self.current_page_index = end_index - 1            
     
         # Handle any SQLAlchemy-related errors that may occur during the process.
-        except SQLAlchemyError as e:
-            # Print an error message to the console if an exception occurs.
-            print(f"Error loading pages: {e}")
+        except SQLAlchemyError as e:        
+            self.show_error_message(f"Error saving book to database: {e}")
 
     def add_page_to_view(self, page_number, content, title=None):
         """Add a new page with a button and content to a view in a PyQt application."""
@@ -327,4 +325,4 @@ class BookList(QWidget):
             dialog.exec_()
 
         except SQLAlchemyError as e:
-            print(f"Error retrieving page content: {e}")
+            self.show_error_message(f"Error saving book to database: {e}")
