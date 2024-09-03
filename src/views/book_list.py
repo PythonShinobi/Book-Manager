@@ -19,6 +19,8 @@ class BookList(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.current_page_number = None
+
         layout = QVBoxLayout(self)
 
         self.label = QLabel('Book List')
@@ -302,7 +304,10 @@ class BookList(QWidget):
                 # Show a message dialog if the page is not found
                 QMessageBox.warning(self, 'Page Not Found', f'Page {page_number} not found.')
                 return
-
+    
+            # Set the current page number
+            self.current_page_number = page_number
+    
             # Create a new dialog window to display the page content
             dialog = QDialog(self)
             dialog.setWindowTitle(f"Page {page_number}")
@@ -316,13 +321,67 @@ class BookList(QWidget):
 
             # Add the QTextEdit widget to the layout
             layout.addWidget(content_widget)
-
-            # Set the dialog layout
+    
+            # Create buttons for editing and closing the dialog
+            button_box = QHBoxLayout()
+            edit_button = QPushButton('Edit')
+            close_button = QPushButton('Close')
+            button_box.addWidget(edit_button)
+            button_box.addWidget(close_button)
+            layout.addLayout(button_box)
+    
+            # Connect buttons to their respective slots
+            edit_button.clicked.connect(lambda: self.enable_editing(content_widget, edit_button))
+            close_button.clicked.connect(dialog.accept)
+            
             dialog.setLayout(layout)
-
-            # Resize the dialog window and show it
             dialog.resize(500, 400)
             dialog.exec_()
-
+    
         except SQLAlchemyError as e:
             self.show_error_message(f"Error saving book to database: {e}")
+
+    def enable_editing(self, content_widget, edit_button):
+        # Enable editing and change the button text to "Save"
+        content_widget.setReadOnly(False)
+        edit_button.setText('Save')
+        edit_button.clicked.disconnect()  # Disconnect previous slot
+        edit_button.clicked.connect(lambda: self.save_page_content(content_widget, edit_button))
+
+    def save_page_content(self, content_widget, edit_button):
+        """Save the edited content of a page to the database."""
+        if self.current_page_number is None:
+            QMessageBox.warning(self, 'No Page Selected', 'No page is currently selected for editing.')
+            return
+
+        new_content = content_widget.toPlainText()
+
+        try:
+            session = Session()
+
+            # Find the page to update
+            page = session.query(Page).filter(Page.number == self.get_current_page_number(),
+                                              Page.book.has(Book.title == self.page_title)).first()
+
+            if not page:
+                QMessageBox.warning(self, 'Page Not Found', f'Page {self.current_page_number} not found.')
+                return
+
+            # Update the page content
+            page.content = new_content
+            session.commit()
+
+            # Set the QTextEdit back to read-only
+            content_widget.setReadOnly(True)
+            edit_button.setText('Edit')
+            edit_button.clicked.disconnect()
+            edit_button.clicked.connect(lambda: self.enable_editing(content_widget, edit_button))
+
+            QMessageBox.information(self, 'Success', 'Page content updated successfully.')
+
+        except SQLAlchemyError as e:
+            self.show_error_message(f"Error saving edited page: {e}")
+    
+    def get_current_page_number(self):
+        """This method should return the current page number being edited/viewed"""      
+        return self.current_page_number
