@@ -325,13 +325,16 @@ class BookList(QWidget):
             # Create buttons for editing and closing the dialog
             button_box = QHBoxLayout()
             edit_button = QPushButton('Edit')
+            delete_button = QPushButton('Delete')
             close_button = QPushButton('Close')
             button_box.addWidget(edit_button)
+            button_box.addWidget(delete_button)
             button_box.addWidget(close_button)
             layout.addLayout(button_box)
     
             # Connect buttons to their respective slots
             edit_button.clicked.connect(lambda: self.enable_editing(content_widget, edit_button))
+            delete_button.clicked.connect(lambda: self.delete_page(page, dialog))
             close_button.clicked.connect(dialog.accept)
             
             dialog.setLayout(layout)
@@ -384,4 +387,71 @@ class BookList(QWidget):
     
     def get_current_page_number(self):
         """This method should return the current page number being edited/viewed"""      
-        return self.current_page_number
+        return self.current_page_number        
+
+    def delete_page(self, page, dialog):
+        """Delete the specified page and close the dialog."""
+        try:
+            # Create a new session for deletion
+            delete_session = Session()
+            
+            # Query the page to ensure it's still valid and not attached
+            page_to_delete = delete_session.query(Page).filter(Page.id == page.id).one()
+            
+            if page_to_delete:
+                # Delete the page
+                delete_session.delete(page_to_delete)
+                delete_session.commit()
+
+                QMessageBox.information(self, 'Page Deleted', f'Page {page.number} has been deleted.')
+
+                # Remove the page content from the view
+                for button, content in self.pages:
+                    if button.text() == page.title:
+                        button.deleteLater()
+                        content.deleteLater()
+                        self.pages.remove((button, content))
+                        break
+
+                dialog.accept()  # Close the dialog after deletion
+
+                self.load_more_pages()
+            else:
+                self.show_error_message('Page not found')
+    
+        except SQLAlchemyError as e:
+            delete_session.rollback()  # Rollback the session in case of error
+            self.show_error_message(f"Error deleting page from database: {e}")
+        finally:
+            delete_session.close()  # Close the session after operations
+
+
+    def delete_book(self, title):
+       try:
+           session = Session()
+           # Query to find the book by title
+           book = session.query(Book).filter(Book.title == title).one()
+           
+           # Delete the book from the database
+           session.delete(book)
+           session.commit()
+           
+           # Remove the book from the UI
+           self.remove_book_card(title)
+           
+       except SQLAlchemyError as e:
+           self.show_error_message(f"Error deleting book from database: {e}")
+       finally:
+           session.close()
+    
+    def remove_book_card(self, title):
+        # Iterate through all items in the QListWidget
+       for index in range(self.book_list_widget.count()):
+           item = self.book_list_widget.item(index)
+           book_card = self.book_list_widget.itemWidget(item)
+           
+           # Check if the book card's title matches the one to delete
+           if book_card and book_card.full_title == title:
+               self.book_list_widget.removeItemWidget(item)
+               item.deleteLater()
+               break

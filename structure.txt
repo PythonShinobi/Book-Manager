@@ -10,8 +10,10 @@ BookManager/
 │   └── views/              # PyQt5 UI components, defined in Python
 │       ├── main_window.py  # Main window layout and design
 │       ├── book_list.py    # Book list view layout and design
-│       └── book_detail.py  # Book detail view layout and design
-│
+│       |── book_detail.py  # Book detail view layout and design
+│       ├── book-card.py    # Model of how the book should look like
+│       └── custom-widget.py  # Contains custom widgets
+│       
 ├── tests/                  # Unit tests for PyQt5 application
 │   └── test_books.py       # Tests for book-related functionality
 │
