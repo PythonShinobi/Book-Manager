@@ -1,5 +1,8 @@
 from PyQt5.QtCore import Qt, QSize, QPoint, QRect
-from PyQt5.QtWidgets import QLayout, QSizePolicy
+from PyQt5.QtWidgets import (
+    QLayout, QSizePolicy, QDialog, QTextEdit,
+    QVBoxLayout, QPushButton, QHBoxLayout
+)
 
 class QFlowLayout(QLayout):
     """This custom layout allows the buttons to wrap around automatically when they 
@@ -78,3 +81,36 @@ class QFlowLayout(QLayout):
             line_height = max(line_height, item.sizeHint().height())
 
         return y + line_height - rect.y()
+    
+class CustomInputDialog(QDialog):
+    """
+    The `CustomInputDialog` class creates a dialog with a `QTextEdit` widget for multi-line text input and an "OK" button. 
+    
+    - **Initialization**: Sets the dialog's title and minimum size.
+    - **Layout Management**: Uses a vertical layout to place the `QTextEdit` for user input.
+    - **Button Layout**: Uses a horizontal layout to position the "OK" button, which closes the dialog when clicked.
+    
+    The dialog allows users to input and confirm text, which can be retrieved using the `get_text()` method.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self.setWindowTitle('Page Content')
+        self.setMinimumSize(600, 400)  # Set a larger minimum size for the dialog
+        
+        layout = QVBoxLayout()
+        
+        self.text_edit = QTextEdit()
+        self.text_edit.setPlaceholderText('Enter page content:')
+        layout.addWidget(self.text_edit)
+        
+        button_layout = QHBoxLayout()
+        self.ok_button = QPushButton('OK')
+        self.ok_button.clicked.connect(self.accept)
+        button_layout.addWidget(self.ok_button)
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def get_text(self):
+        return self.text_edit.toPlainText()    
