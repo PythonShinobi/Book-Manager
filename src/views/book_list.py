@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 )
 
 from database.database import Session, Book, Page
-from .custom_widgets import QFlowLayout
+from .custom_widgets import QFlowLayout, CustomInputDialog
 from .book_card import BookCard
 
 logging.basicConfig(level=logging.DEBUG)  # Set the logging level to DEBUG
@@ -88,16 +88,26 @@ class BookList(QWidget):
             # Call the method to save the book's title and cover image path to the database.
             self.save_book_to_db(title, cover_path)
 
+    def show_error_message(self, message):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setText("An error occurred")
+        msg_box.setInformativeText(message)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()            
+
     def save_book_to_db(self, title, cover_path):
         """Save book to the databse."""
+        session = Session()
         try:
-            session = Session()
             book = Book(title=title, cover_path=cover_path)
             session.add(book)
             session.commit()
             self.add_book_card(title, cover_path)
         except SQLAlchemyError as e:
-            print(f"Error saving book to database: {e}")            
+            self.show_error_message(f"Error saving book to database: {e}")
+        finally:
+            session.close()            
 
     def add_book_card(self, title, cover_path):
         # Create a new QListWidgetItem, which is a container item for adding widgets to QListWidget.
@@ -193,17 +203,31 @@ class BookList(QWidget):
     def add_page(self):
         page_title, ok = QInputDialog.getText(self, 'Add Page', 'Enter page title:')
         if ok and page_title:
-            page_content, ok = QInputDialog.getMultiLineText(self, 'Page Content', 'Enter page content:')
-            if ok and page_content:
-                self.save_page_to_db(page_title, page_content)
+            dialog = CustomInputDialog(self)
+            if dialog.exec_() == QDialog.Accepted:
+                page_content = dialog.get_text()
+                if page_content:
+                    self.save_page_to_db(page_title, page_content)
 
     def save_page_to_db(self, title, content):
         try:
             session = Session()
+
+            # Queries the Book table for a book with the title that matches self.page_title. 
             book = session.query(Book).filter(Book.title == self.page_title).one()
+
+            # Queries the Page table for pages associated with the book.id and counts them.
+            # The result is incremented by 1 to determine the page number for the new page.
             page_number = session.query(Page).filter(Page.book_id == book.id).count() + 1
+
+            # Creates a new Page object with the provided number, content, title, and book_id.
             page = Page(number=page_number, content=content, title=title, book_id=book.id)
+
+            # Adds the newly created Page object to the session, marking it 
+            # to be inserted into the database upon commit.
             session.add(page)
+
+            # Commits the transaction, making all changes made in the session permanent in the database.
             session.commit()
             self.add_page_to_view(page_number, content, title)
         except SQLAlchemyError as e:
