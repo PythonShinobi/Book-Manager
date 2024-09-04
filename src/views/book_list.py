@@ -21,12 +21,35 @@ class BookList(QWidget):
 
         self.current_page_number = None
 
+        self.init_ui()
+
+        self.load_books()
+
+    def init_ui(self):
+        """Initialize the UI components and layout."""
         layout = QVBoxLayout(self)
 
+        # Set up the label
+        self.create_label(layout)
+
+        # Set up the book list widget
+        self.create_book_list_widget(layout)
+
+        # Set up the add book button
+        self.create_add_button(layout)
+
+        # Set up the stacked widget for book details
+        self.create_stacked_widget(layout)
+
+        self.add_page_button = self.create_add_page_button()
+        self.load_page_button = self.create_load_page_button()
+
+    def create_label(self, layout):
         self.label = QLabel('Book List')
         self.label.setFont(QFont('Verdana', 16, QFont.Weight.Light))
         layout.addWidget(self.label)  # Add title to the layout.
 
+    def create_book_list_widget(self, layout):
         # Create QListWidget for displaying book cards.
         self.book_list_widget = QListWidget()
         self.book_list_widget.setFlow(QListWidget.LeftToRight)  # Arrange items horizontally
@@ -34,6 +57,16 @@ class BookList(QWidget):
         self.book_list_widget.setResizeMode(QListWidget.Adjust)  # Adjust size of items automatically
         layout.addWidget(self.book_list_widget)  # Add list widget to the layout.
 
+    def create_stacked_widget(self, layout):
+        # Stack to switch between book list and book details
+        self.stacked_widget = QStackedWidget()  # Manages multiple child widgets (pages) but displays only one at a time.
+        self.page_view = QWidget()  # Container for displaying the book's title and pages.
+        self.page_layout = QVBoxLayout(self.page_view)
+        self.page_view.setLayout(self.page_layout)
+        self.stacked_widget.addWidget(self.page_view)
+        layout.addWidget(self.stacked_widget)  # Add stack widget to the layout.
+
+    def create_add_button(self, layout):
         self.add_button = QPushButton('Add Book')  # Add book button
         self.add_button.setFixedWidth(400)
         self.add_button.clicked.connect(self.add_book_dialog)
@@ -43,16 +76,6 @@ class BookList(QWidget):
         add_button_layout.addWidget(self.add_button)  # Add the button in the middle
         add_button_layout.addStretch()  # Add stretchable space to the right
         layout.addLayout(add_button_layout)  # Add the horizontal layout to the main layout
-
-        # Stack to switch between book list and book details
-        self.stacked_widget = QStackedWidget()  # Manages multiple child widgets (pages) but displays only one at a time.
-        self.page_view = QWidget()  # Container for displaying the book's title and pages.
-        self.page_layout = QVBoxLayout(self.page_view)
-        self.page_view.setLayout(self.page_layout)
-        self.stacked_widget.addWidget(self.page_view)
-        layout.addWidget(self.stacked_widget)  # Add stack widget to the layout.
-
-        self.load_books()
 
     def load_books(self):
         """Load books from the database."""
@@ -172,25 +195,14 @@ class BookList(QWidget):
         content_area_layout = QVBoxLayout(content_area_widget)
     
         # Create a horizontal layout for the action buttons (Add Page, Load More Pages).
-        button_layout = QHBoxLayout()
-    
-        # Create and configure an "Add Page" button, and connect it to the add_page method.
-        add_page_button = QPushButton('Add Page')
-        add_page_button.clicked.connect(self.add_page)
-        add_page_button.setFixedWidth(150)  # Set a fixed width for the button.
-        add_page_button.setIcon(qta.icon('fa.plus'))  # Set an icon for the button.
-        button_layout.addWidget(add_page_button, alignment=Qt.AlignmentFlag.AlignLeft)
-    
-        # Create and configure a "Load More Pages" button, and connect it to the load_more_pages method.
-        self.load_more_button = QPushButton('Load More Pages')
-        self.load_more_button.clicked.connect(self.load_more_pages)
-        self.load_more_button.setFixedWidth(150)  # Set a fixed width for the button.
-        self.load_more_button.setIcon(qta.icon('fa.refresh'))  # Set an icon for the button.
-        button_layout.addWidget(self.load_more_button, alignment=Qt.AlignmentFlag.AlignRight)
+        button_layout = QHBoxLayout()    
+        button_layout.addWidget(self.add_page_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        button_layout.addWidget(self.load_page_button, alignment=Qt.AlignmentFlag.AlignRight)
     
         # Add the scroll area (with page buttons) and the content area to the page layout.
         self.page_layout.addWidget(scroll_area)
         self.page_layout.addWidget(content_area_widget)
+        self.page_layout.addLayout(button_layout)
     
         # Initialize variables to track page data and layout:
         self.page_buttons_layout = page_buttons_layout  # Store the layout for adding buttons later.
@@ -198,12 +210,25 @@ class BookList(QWidget):
         self.pages = []  # Initialize an empty list to track pages for dynamic management.
         self.current_page_index = -1  # Start before the first page
         self.page_title = title  # Store the current book title for reference.
-    
-        # Add the action button layout to the page layout.
-        self.page_layout.addLayout(button_layout)
-    
+        
         # Load the initial set of pages from the database.
         self.load_more_pages()
+
+    def create_add_page_button(self):
+        # Create and configure an "Add Page" button, and connect it to the add_page method.
+        add_page_button = QPushButton('Add Page')
+        add_page_button.clicked.connect(self.add_page)
+        add_page_button.setFixedWidth(150)  # Set a fixed width for the button.
+        add_page_button.setIcon(qta.icon('fa.plus'))  # Set an icon for the button.
+        return add_page_button
+
+    def create_load_page_button(self):
+        # Create and configure a "Load More Pages" button, and connect it to the load_more_pages method.
+        load_more_button = QPushButton('Load More Pages')
+        load_more_button.clicked.connect(self.load_more_pages)
+        load_more_button.setFixedWidth(150)  # Set a fixed width for the button.
+        load_more_button.setIcon(qta.icon('fa.refresh'))  # Set an icon for the button.
+        return load_more_button
 
     def add_page(self):
         page_title, ok = QInputDialog.getText(self, 'Add Page', 'Enter page title:')
