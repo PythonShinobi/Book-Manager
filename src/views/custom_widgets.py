@@ -1,7 +1,9 @@
+import qtawesome as qta
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QSize, QPoint, QRect
 from PyQt5.QtWidgets import (
     QLayout, QSizePolicy, QDialog, QTextEdit,
-    QVBoxLayout, QPushButton, QHBoxLayout
+    QVBoxLayout, QPushButton, QHBoxLayout, QLabel
 )
 
 class QFlowLayout(QLayout):
@@ -114,3 +116,65 @@ class CustomInputDialog(QDialog):
     
     def get_text(self):
         return self.text_edit.toPlainText()    
+    
+class AboutDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("About")
+        self.setFixedSize(400, 300)  # Adjusted size to give more space for content
+
+        # Set an icon for the dialog window
+        self.setWindowIcon(qta.icon('fa.info-circle'))
+
+        # Set background color
+        self.setStyleSheet("background-color: #f0f0f0;")
+
+        layout = QVBoxLayout()
+
+        # Set up the information label with improved font and padding
+        info_label = QLabel(
+            "Book Manager is a desktop application designed to help users manage their book collection.\n\n"
+            "Features include:\n"
+            "- Adding books to the collection\n"
+            "- Add pages for a specific book\n"
+            "- Deleting the pages of a book\n"
+            "- Deleting books from the collection\n\n"
+            "This application is ideal for recording the information you read in books.\n\n"
+            "Note: To save book covers, you should manually edit the covers to fit the specified size: "
+            "110 width and 150 height."
+        )
+        info_label.setFont(QFont('Merriweather', 11, QFont.Weight.Normal))  # Set a more elegant font
+        info_label.setStyleSheet("padding: 10px; color: #333;")  # Add padding and set text color
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # Add a separator line (optional)
+        separator = QLabel()
+        separator.setFixedHeight(2)
+        separator.setStyleSheet("background-color: #cccccc; margin: 10px 0;")
+        layout.addWidget(separator)
+
+        # Set up the OK button with custom styling
+        ok_button = QPushButton("OK")
+        ok_button.setFont(QFont('Merriweather', 10, QFont.Weight.Bold))
+        ok_button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #007BFF;"  # Bootstrap primary blue color
+            "color: white;"
+            "border-radius: 5px;"
+            "padding: 8px 16px;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #0056b3;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #004085;"
+            "}"
+        )
+        ok_button.clicked.connect(self.accept)  # Close the dialog when clicked
+        ok_button.setFixedWidth(80)  # Set a fixed width for the button
+        ok_button.setCursor(Qt.CursorShape.PointingHandCursor)  # Change cursor to pointing hand on hover
+        layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignCenter)  # Center the button horizontally
+
+        self.setLayout(layout)
