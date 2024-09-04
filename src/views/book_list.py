@@ -132,6 +132,9 @@ class BookList(QWidget):
         # The lambda function is used to pass the title of the book to the show_book_pages method.
         book_card.clicked.connect(lambda title=title: self.show_book_pages(title))
 
+        # Connect the delete_requested signal to the delete_book method
+        book_card.delete_requested.connect(lambda title=title: self.delete_book(title))
+
     def show_book_pages(self, title):
         # Clear any existing widgets from the page layout to prepare for new content.
         while self.page_layout.count():
@@ -424,34 +427,27 @@ class BookList(QWidget):
             self.show_error_message(f"Error deleting page from database: {e}")
         finally:
             delete_session.close()  # Close the session after operations
-
-
-    def delete_book(self, title):
-       try:
-           session = Session()
-           # Query to find the book by title
-           book = session.query(Book).filter(Book.title == title).one()
-           
-           # Delete the book from the database
-           session.delete(book)
-           session.commit()
-           
-           # Remove the book from the UI
-           self.remove_book_card(title)
-           
-       except SQLAlchemyError as e:
-           self.show_error_message(f"Error deleting book from database: {e}")
-       finally:
-           session.close()
     
+    def delete_book(self, title):
+        """Delete a book in the database."""
+        reply = QMessageBox.question(self, 'Delete Book', f"Are you sure you want to delete '{title}'?", 
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                session = Session()
+                book = session.query(Book).filter(Book.title == title).one()
+                session.delete(book)
+                session.commit()                
+                self.remove_book_card(title)  # Remove the book card from the UI
+            except SQLAlchemyError as e:
+                self.show_error_message(f"Error deleting book from database: {e}")    
+
     def remove_book_card(self, title):
-        # Iterate through all items in the QListWidget
-       for index in range(self.book_list_widget.count()):
-           item = self.book_list_widget.item(index)
-           book_card = self.book_list_widget.itemWidget(item)
-           
-           # Check if the book card's title matches the one to delete
-           if book_card and book_card.full_title == title:
-               self.book_list_widget.removeItemWidget(item)
-               item.deleteLater()
-               break
+        """Remove card from the Book List view."""
+        for index in range(self.book_list_widget.count()):
+            item = self.book_list_widget.item(index)
+            book_card = self.book_list_widget.itemWidget(item)
+    
+            if book_card and hasattr(book_card, 'full_title') and book_card.full_title == title:
+                self.book_list_widget.takeItem(index)  # Remove item from the QListWidget
+                break
