@@ -158,7 +158,7 @@ class BookList(QWidget):
         # Create a QScrollArea for displaying buttons that allow navigation through the pages.
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)  # Allow the scroll area to resize its content.
-        scroll_area.setFixedHeight(150)  # Set the height of the scroll area.
+        scroll_area.setFixedHeight(120)  # Set the height of the scroll area.
     
         # Create a QWidget to hold the buttons, with a QFlowLayout to manage their arrangement.
         page_buttons_widget = QWidget()
