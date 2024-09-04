@@ -454,18 +454,30 @@ class BookList(QWidget):
             delete_session.close()  # Close the session after operations
     
     def delete_book(self, title):
-        """Delete a book in the database."""
-        reply = QMessageBox.question(self, 'Delete Book', f"Are you sure you want to delete '{title}'?", 
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            try:
-                session = Session()
-                book = session.query(Book).filter(Book.title == title).one()
-                session.delete(book)
-                session.commit()                
-                self.remove_book_card(title)  # Remove the book card from the UI
-            except SQLAlchemyError as e:
-                self.show_error_message(f"Error deleting book from database: {e}")    
+       """Delete a book in the database."""
+       reply = QMessageBox.question(self, 'Delete Book', f"Are you sure you want to delete '{title}'?", 
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+       if reply == QMessageBox.Yes:
+           try:
+               session = Session()
+               
+               # Find the book
+               book = session.query(Book).filter(Book.title == title).one()
+               
+               # Delete associated pages
+               session.query(Page).filter(Page.book_id == book.id).delete(synchronize_session=False)
+               
+               # Delete the book
+               session.delete(book)
+               session.commit()
+               
+               # Remove the book card from the UI
+               self.remove_book_card(title)
+           except SQLAlchemyError as e:
+               session.rollback()  # Rollback the transaction on error
+               self.show_error_message(f"Error deleting book from database: {e}")
+           finally:
+               session.close()  # Ensure the session is closed  
 
     def remove_book_card(self, title):
         """Remove card from the Book List view."""
