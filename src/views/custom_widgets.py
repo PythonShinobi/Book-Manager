@@ -122,7 +122,7 @@ class AboutDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle("About")
-        self.setFixedSize(400, 300)  # Adjusted size to give more space for content
+        self.setFixedSize(500, 400)  # Adjusted size to give more space for content
 
         # Set an icon for the dialog window
         self.setWindowIcon(qta.icon('fa.info-circle'))
@@ -140,7 +140,7 @@ class AboutDialog(QDialog):
             "- Add pages for a specific book\n"
             "- Deleting the pages of a book\n"
             "- Deleting books from the collection\n\n"
-            "This application is ideal for recording the information you read in books.\n\n"
+            "This application is ideal for recording the information you read in books.\n"
             "Note: To save book covers, you should manually edit the covers to fit the specified size: "
             "110 width and 150 height."
         )
